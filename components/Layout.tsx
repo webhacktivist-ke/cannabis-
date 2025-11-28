@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingBag, Menu, X, MapPin, User, Search, Cannabis, Instagram, Facebook, Twitter, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, Menu, X, MapPin, User, Search, Cannabis, Instagram, Facebook, Twitter, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useApp } from '../App';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -8,10 +8,43 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
+  // Newsletter state
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+
   // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if(!newsletterEmail) return;
+    setNewsletterStatus('submitting');
+    
+    const formData = new FormData();
+    formData.append('email', newsletterEmail);
+    formData.append('message', 'Newsletter Subscription Request');
+
+    try {
+      const response = await fetch("https://formspree.io/f/xangvqwj", {
+        method: "POST",
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        setNewsletterStatus('success');
+        setNewsletterEmail('');
+      } else {
+        setNewsletterStatus('error');
+      }
+    } catch (error) {
+      setNewsletterStatus('error');
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-stone-50 font-sans text-stone-900">
@@ -112,6 +145,37 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <p className="text-sm mb-6">
               Premium cannabis products for the modern lifestyle. Quality tested, responsibly sourced, and delivered with care.
             </p>
+            
+            {/* Newsletter */}
+            <div className="mb-6">
+                <h5 className="text-white font-bold text-sm mb-2 uppercase tracking-wide">Stay Updated</h5>
+                {newsletterStatus === 'success' ? (
+                    <div className="text-brand-green text-sm font-medium bg-brand-green/10 p-2 rounded">
+                        Thanks for subscribing!
+                    </div>
+                ) : (
+                    <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+                        <input 
+                            type="email" 
+                            name="email"
+                            placeholder="Your email" 
+                            className="w-full bg-stone-800 border border-stone-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-green"
+                            value={newsletterEmail}
+                            onChange={(e) => setNewsletterEmail(e.target.value)}
+                            required
+                        />
+                        <button 
+                            type="submit" 
+                            disabled={newsletterStatus === 'submitting'}
+                            className="bg-brand-green hover:bg-brand-dark text-white p-2 rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            <ArrowRight size={18} />
+                        </button>
+                    </form>
+                )}
+                {newsletterStatus === 'error' && <p className="text-red-400 text-xs mt-1">Something went wrong. Try again.</p>}
+            </div>
+
             <div className="flex gap-4">
               <Instagram size={20} className="hover:text-white cursor-pointer" />
               <Facebook size={20} className="hover:text-white cursor-pointer" />
